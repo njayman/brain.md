@@ -96,6 +96,7 @@ const DESKTOP_VIEW_LABEL: Record<DesktopView, string> = {
   edit: "Layout: editor only",
   preview: "Layout: preview only",
 };
+const MOD_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl+";
 
 export function App() {
   const { theme, setTheme, resolved } = useTheme();
@@ -116,13 +117,14 @@ export function App() {
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   // Desktop layout: both panes, editor only, or preview only. Persisted per device.
   const [storedView, setDesktopView] = useLocal<DesktopView>("brain.desktopView", "split");
-  const desktopView: DesktopView = storedView in NEXT_DESKTOP_VIEW ? storedView : "split";
+  // Stored value is untrusted (null, garbage, "constructor"…): accept only known layouts.
+  const desktopView: DesktopView = storedView === "edit" || storedView === "preview" ? storedView : "split";
   const cycleDesktopView = useCallback(() => {
     setDesktopView(NEXT_DESKTOP_VIEW[desktopView]);
   }, [desktopView, setDesktopView]);
   // Lives in whichever pane head is visible, so it's always in the same corner.
   const layoutBtn = isMobile ? null : (
-    <IconBtn label={`${DESKTOP_VIEW_LABEL[desktopView]} (⌘\\)`} onClick={cycleDesktopView}>
+    <IconBtn label={`${DESKTOP_VIEW_LABEL[desktopView]} (${MOD_KEY}\\)`} onClick={cycleDesktopView}>
       {desktopView === "edit" ? <PenIcon /> : desktopView === "preview" ? <EyeIcon /> : <ColumnsIcon />}
     </IconBtn>
   );
@@ -730,15 +732,17 @@ export function App() {
       } else if (mod && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setCmd("search");
-      } else if (mod && !e.altKey && e.key === "\\") {
+      } else if (mod && !e.altKey && !isMobile && e.key === "\\") {
         // !altKey: CodeMirror binds Mod-Alt-\ to indentSelection.
+        // !isMobile: the mobile tabs own the layout there.
         e.preventDefault();
-        cycleDesktopView();
+        // Holding the keys auto-repeats; one press = one layout step.
+        if (!e.repeat) cycleDesktopView();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [flush, cycleDesktopView]);
+  }, [flush, cycleDesktopView, isMobile]);
 
   const onFileInputChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {

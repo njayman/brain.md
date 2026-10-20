@@ -262,7 +262,7 @@ Two synchronised panes powered by **CodeMirror 6** and a
 in the preview stays anchored to the cursor in the editor; a thin SVG
 connector marks the link between them.
 
-Need more room? The layout button in the top bar (or **⌘\\ / Ctrl+\\**)
+Need more room? The layout button in the pane header (or **⌘\\ / Ctrl+\\**)
 cycles **editor + preview → editor only → preview only**, and the
 choice is remembered per device.
 
